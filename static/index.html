@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>OCR URL List</title>
+</head>
+<body>
+  <h2>OCR 输入 URL 列表</h2>
+  <textarea id="urlList" rows="10" cols="80" placeholder="每行一个图片 URL"></textarea>
+  <br><br>
+  <button onclick="submitOCR()">提交 OCR</button>
+  <pre id="result" style="white-space: pre-wrap; word-wrap: break-word;"></pre>
+
+  <script>
+    async function submitOCR() {
+      const urls = document.getElementById('urlList').value
+                   .split('\n')
+                   .map(u => u.trim())
+                   .filter(u => u);
+
+      const response = await fetch('/ocr/ocr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ urls })
+      });
+
+      const data = await response.json();
+      document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+      // document.getElementById('result').innerHTML = Object.entries(data)
+      // .map(([url, text]) => `<strong>${url}</strong>: ${text.replace(/\n/g, '<br>')}`)
+      // .join('<br><br>');
+    }
+  </script>
+</body>
+</html>
