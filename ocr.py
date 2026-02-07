@@ -1,9 +1,33 @@
 from paddleocr import PaddleOCR
-import requests
 from PIL import Image
 from io import BytesIO
 import numpy as np
+import httpx
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
+ocr_executor = ThreadPoolExecutor(max_workers=1)
+
+async def run_ocr(img):
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(
+        ocr_executor,
+        ocr.ocr,
+        img
+    )
+http_client = httpx.AsyncClient(
+    timeout=httpx.Timeout(
+        connect=5.0,
+        read=10.0,
+        write=10.0,
+        pool=5.0,
+    ),
+    limits=httpx.Limits(
+        max_connections=50,
+        max_keepalive_connections=10
+    ),
+    follow_redirects=True,
+)
 ocr = PaddleOCR(
     use_gpu=False,
     lang='ch',                # 语言：中文
@@ -15,8 +39,8 @@ ocr = PaddleOCR(
     max_batch_size=1,
     enable_mkldnn=False,
     ir_optim=True,
-    show_log=False            # 生产关日志
-    device="cpu",       # 指定 CPU 推理
+    show_log=False,            # 生产关日志
+    device="cpu",              # 指定 CPU 推理
 )
 
 def parse_ocr_result(result):
@@ -29,16 +53,17 @@ def parse_ocr_result(result):
         })
     return lines
 
-def ocr_from_url(url: str) -> str:
-    headers = {
-        "User-Agent": "Mozilla/5.0"
-    }
-    r = requests.get(url, headers=headers, timeout=15)
-    r.raise_for_status()
+async def fetch_image(url: str) -> bytes:
+    resp = await http_client.get(url)
+    resp.raise_for_status()
+    return resp.content
 
-    img = Image.open(BytesIO(r.content)).convert("RGB")
+async def ocr_from_url(url: str) -> str:
+    img_bytes = await fetch_image(url)
+    img = Image.open(BytesIO(img_bytes)).convert("RGB")
     img = np.array(img)  # 转成 numpy.ndarray
-    result = ocr.ocr(img)
+
+    result = await run_ocr(img)
     data = parse_ocr_result(result)
     return {
         "texts": "\n".join([line["text"] for line in data]),

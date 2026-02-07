@@ -8,15 +8,29 @@
   <h2>OCR 输入 URL 列表</h2>
   <textarea id="urlList" rows="10" cols="80" placeholder="每行一个图片 URL"></textarea>
   <br><br>
-  <button onclick="submitOCR()">提交 OCR</button>
+  <button id="submitBtn" onclick="submitOCR()">Go OCR</button>
   <pre id="result" style="white-space: pre-wrap; word-wrap: break-word;"></pre>
 
   <script>
     async function submitOCR() {
+    const btn = document.getElementById('submitBtn');
+    const resultEl = document.getElementById('result');
+
+    // ===== 进入 loading 状态 =====
+    btn.disabled = true;
+    const originalText = btn.textContent;
+    btn.textContent = 'OCR 处理中...';
+    resultEl.textContent = '';
+
+    try {
       const urls = document.getElementById('urlList').value
-                   .split('\n')
-                   .map(u => u.trim())
-                   .filter(u => u);
+        .split('\n')
+        .map(u => u.trim())
+        .filter(u => u);
+
+      if (urls.length === 0) {
+        throw new Error('请输入至少一个图片 URL');
+      }
 
       const response = await fetch('/ocr/ocr', {
         method: 'POST',
@@ -24,12 +38,25 @@
         body: JSON.stringify({ urls })
       });
 
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
       const data = await response.json();
-      document.getElementById('result').textContent = JSON.stringify(data, null, 2);
-      // document.getElementById('result').innerHTML = Object.entries(data)
-      // .map(([url, text]) => `<strong>${url}</strong>: ${text.replace(/\n/g, '<br>')}`)
-      // .join('<br><br>');
+      if (data.texts) {
+        resultEl.textContent = JSON.stringify(data.texts, null, 2);
+      } else {
+        resultEl.textContent = JSON.stringify(data.raw, null, 2);
+      }
+
+    } catch (err) {
+      resultEl.textContent = '❌ 请求失败: ' + err.message;
+    } finally {
+      // ===== 退出 loading 状态 =====
+      btn.disabled = false;
+      btn.textContent = originalText;
     }
+  }
   </script>
 </body>
 </html>

@@ -10,16 +10,16 @@ class OCRRequest(BaseModel):
     urls: List[str]
 
 @app.post("/ocr")
-def ocr_api(req: OCRRequest):
+async def ocr_api(req: OCRRequest):
     res = {}
     for url in req.urls:
         try:
-            res[url] = ocr_from_url(url)
+            res[url] = await ocr_from_url(url)
         except Exception as e:
-            res[url] = f"ERROR: {e}"
-    
+            res[url] = {"err": f"ERROR: {e}"}
+    print(res)
     return {
-        "texts": "\n".join([data["texts"] for data in res.values()]),
+        "texts": "\n".join([data["texts"] for data in res.values() if "texts" in data]),
         "raw":res
     }
 
