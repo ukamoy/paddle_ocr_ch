@@ -27,6 +27,11 @@ pip install -r requirements.txt
 
 ---
 ## 启动服务
+本地开发
+```bash
+uvicorn main:app --host 0.0.0.0 --port 8010 --reload
+```
+ARM 生产部署（Gunicorn + UvicornWorker）
 ```bash
 gunicorn main:app \
   -k uvicorn.workers.UvicornWorker \
