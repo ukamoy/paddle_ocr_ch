@@ -3,7 +3,6 @@ paddleocr==2.7.0.3
 paddlex
 fastapi
 uvicorn
-requests
 pillow
 httpx==0.26.0
 numpy==1.26.4
