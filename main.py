@@ -1,25 +1,34 @@
-from fastapi import FastAPI
+import asyncio
+import os
+
+from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from typing import List
 from ocr import ocr_from_url
 
 app = FastAPI()
 
+OCR_CONCURRENCY_PER_WORKER = max(1, int(os.getenv("OCR_CONCURRENCY_PER_WORKER", "1")))
+ocr_semaphore = asyncio.Semaphore(OCR_CONCURRENCY_PER_WORKER)
+
+
 class OCRRequest(BaseModel):
-    urls: List[str]
+    url: str
+
 
 @app.post("/ocr")
 async def ocr_api(req: OCRRequest):
-    res = {}
-    for url in req.urls:
+    url = req.url.strip()
+    if not url:
+        raise HTTPException(status_code=400, detail="url is required")
+
+    async with ocr_semaphore:
         try:
-            res[url] = await ocr_from_url(url)
+            res = await ocr_from_url(url)
+            print("main:", res)
+            return res
         except Exception as e:
-            res[url] = {"err": f"ERROR: {e}"}
-    print("main:",res)
-    return {
-        "texts": "\n\n".join([data["texts"] for data in res.values() if "texts" in data]),
-        "raw": res
-    }
+            raise HTTPException(status_code=500, detail=f"ERROR: {e}") from e
+
+
 app.mount("/", StaticFiles(directory="static", html=True), name="static")

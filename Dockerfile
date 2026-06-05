@@ -19,6 +19,7 @@ ENV OMP_NUM_THREADS=1
 ENV MKL_NUM_THREADS=1
 ENV PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK=True
 ENV PADDLEX_DIR=/root/.paddlex/official_models
+ENV OCR_CONCURRENCY_PER_WORKER=1
 
 # 安装 Python 依赖
 COPY requirements.txt .
@@ -29,4 +30,4 @@ COPY . .
 
 EXPOSE 8010
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8010", "--workers", "1"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8010", "--workers", "5"]

@@ -2,11 +2,11 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>OCR URL List</title>
+  <title>OCR URL</title>
 </head>
 <body>
-  <h2>OCR 输入 URL 列表</h2>
-  <textarea id="urlList" rows="10" cols="80" placeholder="每行一个图片 URL"></textarea>
+  <h2>OCR URL</h2>
+  <input id="imageUrl" size="80" placeholder="图片 URL">
   <br><br>
   <button id="submitBtn" onclick="submitOCR()">Go OCR</button>
   <pre id="result" style="white-space: pre-wrap; word-wrap: break-word;"></pre>
@@ -23,19 +23,16 @@
     resultEl.textContent = '';
 
     try {
-      const urls = document.getElementById('urlList').value
-        .split('\n')
-        .map(u => u.trim())
-        .filter(u => u);
+      const url = document.getElementById('imageUrl').value.trim();
 
-      if (urls.length === 0) {
-        throw new Error('请输入至少一个图片 URL');
+      if (!url) {
+        throw new Error('请输入图片 URL');
       }
 
       const response = await fetch('/ocr/ocr', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ urls })
+        body: JSON.stringify({ url })
       });
 
       if (!response.ok) {
