@@ -7,6 +7,13 @@
 <body>
   <h2>OCR URL</h2>
   <input id="imageUrl" size="80" placeholder="图片 URL">
+  <label>Mode:
+    <select id="ocrMode">
+      <option value="text">text</option>
+      <option value="markdown">markdown</option>
+      <option value="latex">latex</option>
+    </select>
+  </label>
   <br><br>
   <button id="submitBtn" onclick="submitOCR()">Go OCR</button>
   <pre id="result" style="white-space: pre-wrap; word-wrap: break-word;"></pre>
@@ -32,14 +39,23 @@
       const response = await fetch('/ocr/ocr', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url })
+        body: JSON.stringify({ url, mode: document.getElementById('ocrMode').value })
       });
 
+      const responseText = await response.text();
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        const preview = responseText.replace(/\s+/g, ' ').slice(0, 160);
+        throw new Error(
+          `服务器返回的不是 JSON（可能是代理超时或网关错误，HTTP ${response.status}）: ${preview}`
+        );
+      }
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+        throw new Error(data.detail || `HTTP ${response.status}`);
       }
 
-      const data = await response.json();
       if (data.texts) {
         resultEl.textContent = JSON.stringify(data.texts, null, 2);
       } else {
